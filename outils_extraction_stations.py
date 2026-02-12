@@ -92,6 +92,41 @@ def extrait_points_asos_era5l(an_debut=1965, an_fin=1978):
 
     print("fin normale")
 
+def extrait_points_cweeds_du_mrcc():
+    """fonction qui extrait les points des stations CWEEDS de la grille du MRCC"""
+
+    rep_cweeds_nc = "/home/biner/exec/1_projets/202509_climato_vent/data/stations_cweeds/CWEEDS_netcdf"
+
+    ds_cweeds = xr.open_mfdataset(os.path.join(rep_cweeds_nc, "CWEEDS_*.nc"), concat_dim="station", combine="nested")
+    ds_cweeds = ds_cweeds.rename(station="site")
+    ds_cweeds.lon.load()
+    ds_cweeds.lat.load()
+
+    # boucle sur les années
+    for annee in range(1998, 2024+1):
+
+        # lecture et mise en forme pour la suite
+        sfcwind = xr.open_mfdataset(os.path.join(r_daf, str(annee), "sfcWind_*_se.nc"))
+
+        # boucle sur les stations
+        l_ds = []
+        for ii in tqdm(range(ds_cweeds.site.size)):
+            ds_pt = ds_cweeds.isel(site=range(ii, ii+1))
+            var_pt = xs.spatial.subset(sfcwind, "gridpoint", lon=ds_pt.lon, lat=ds_pt.lat, add_distance=True)
+            l_ds.append(var_pt)
+        ds_pt = xr.concat(l_ds, dim="site")
+        
+        # sauvegarde du fichier
+        with ProgressBar():
+            r_nc = "/home/biner/exec/1_projets/202509_climato_vent/data/daf_stations_cweeds"
+            f_nc = f"daf_extraction_stations_cweeds_{annee}.nc"
+            p_nc = os.path.join(r_nc, f_nc)
+            print(f"sauvegarde dans {p_nc}")
+            ds_pt.to_netcdf(p_nc)
+
+    print("fin normale")
+
+
 def extrait_points_mats_du_mrcc():
     """fonction qui extrait les points des mats HQ de la grille du MRCC"""
 
@@ -115,6 +150,7 @@ def extrait_points_mats_du_mrcc():
             var_pt = xs.spatial.subset(vent_daf, "gridpoint", lon=ds_pt.lon, lat=ds_pt.lat, add_distance=True)
             l_ds.append(var_pt)
         ds_pt = xr.concat(l_ds, dim="site")
+        
         
         # sauvegarde du fichier
         with ProgressBar():
@@ -175,8 +211,9 @@ def extrait_points_mats_hq_era5(an_debut=2008, an_fin=2024):
 
 def main():
     # extrait_points_asos_du_mrcc()
+    extrait_points_cweeds_du_mrcc()
     # extrait_points_mats_du_mrcc()
-    extrait_points_mats_hq_era5()
+    # extrait_points_mats_hq_era5()
 
 
 if __name__ == "__main__":
