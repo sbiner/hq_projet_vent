@@ -169,7 +169,7 @@ def extrait_points_cweeds_era5l(an_debut=1998, an_fin=2024):
 def extrait_points_mats_du_mrcc():
     """fonction qui extrait les points des mats HQ de la grille du MRCC"""
 
-    rep_data_mrcc = "/home/biner/exec/1_projets/202509_climato_vent/data/data_olivier/diagnostics_exact/daf/100m/hourly"
+    rep_data_mrcc = "/home/biner/exec/1_projets/202509_climato_vent/data/data_olivier/diagnostics/daf/100m/hourly"
 
     # lecture des données des mats et mise en forme
     f_mats_hq = "/exec/biner/1_projets/202509_climato_vent/data/stations_mats_hq/traitees/data_mat_tous.nc"
@@ -177,7 +177,7 @@ def extrait_points_mats_du_mrcc():
     ds_mats = ds_mats.rename(parc_mat="site")
 
     # boucle sur les années
-    for annee in range(2013, 2024+1):
+    for annee in range(2006, 2013+1):
 
         # lecture et mise en forme pour la suite
         vent_daf = xr.open_mfdataset(os.path.join(rep_data_mrcc, "wind", f"U_daf_{annee}*.nc"))
@@ -245,8 +245,8 @@ def extrait_points_mats_hq_era5(an_debut=2008, an_fin=2024):
 def main():
     # extrait_points_asos_du_mrcc()
     # extrait_points_cweeds_du_mrcc()
-    extrait_points_cweeds_era5l()
-    # extrait_points_mats_du_mrcc()
+    #extrait_points_cweeds_era5l()
+    extrait_points_mats_du_mrcc()
     # extrait_points_mats_hq_era5()
 
 
