@@ -21,17 +21,32 @@ from dask.diagnostics import ProgressBar
 f_stations_asos = "/home/biner/exec/1_projets/202509_climato_vent/data/stations_asos/ASOS_preprocessed.zarr.zip"
 r_daf = "/home/biner/exec/1_projets/202509_climato_vent/data/daf/series"
 
-def extrait_points_asos_du_mrcc():
+def extrait_points_asos_du_mrcc(fraction_terre_seuil=None):
     """fonction qui extrait les po,ints des stations ASOS de la grille du MRCC"""
 
+    # si fraction_terre_seuil n'est pas None, on tient compte de cette valeur pour masquer les points avec des 
+    # valeurs de fraction de terre sous ce seuil
+    if fraction_terre_seuil is not None:
+        print("fraction 1")
+        f_fraction_terre = "/sac/climato/arch/daf/invariants/nolklandFrac_daf_fx.nc"
+        ft = xr.open_dataset(f_fraction_terre).nolklandFrac / 100.
+        masque_terre = ft.where(ft >= fraction_terre_seuil)
+        lon2d_terre = masque_terre.lon.where(masque_terre.notnull())
+        lat2d_terre = masque_terre.lat.where(masque_terre.notnull())
     # boucle sur les années
     
-    for annee in range(1995, 2024+1):
+    for annee in range(1980, 2024+1):
 
         # lecture et mise en forme pour la suite
         sfcwind = xr.open_mfdataset(os.path.join(r_daf, str(annee), "sfcWind_*_se.nc"))
         ds_asos = xr.open_dataset(f_stations_asos, engine="zarr")
         ds_asos = ds_asos.rename(station="site")
+
+        # on utilise les lon et lat masquees sur la terre seulement si fraction_terre_seuil n'est pas None
+        if fraction_terre_seuil is not None:
+            print("fraction 2")
+            sfcwind["lon"] = lon2d_terre
+            sfcwind["lat"] = lat2d_terre
 
         # sfcwind_pt_asos = xc.spatial.subset(sfcwind, method="gridpoint", lon=ds_asos.lon, 
         #                                     lat=ds_asos.lat, add_distance=True, name="station")
@@ -48,6 +63,14 @@ def extrait_points_asos_du_mrcc():
         with ProgressBar():
             r_nc = "/home/biner/exec/1_projets/202509_climato_vent/data/daf_stations_asos"
             f_nc = f"daf_extraction_stations_asos_{annee}.nc"
+            # si fraction_terre_seuil est pas None on ajuste le nom
+            if fraction_terre_seuil is not None:
+                print("fraction_3")
+                r_nc = os.path.join(r_nc, f"fraction_terre_{fraction_terre_seuil}")
+                if not os.path.exists(r_nc):
+                    os.makedirs(r_nc)
+                tampon = f"_fraction_terre_{fraction_terre_seuil}.nc"
+                f_nc = f_nc.replace(".nc", tampon)
             p_nc = os.path.join(r_nc, f_nc)
             print(f"sauvegarde dans {p_nc}")
             ds_pt.to_netcdf(p_nc)
@@ -243,10 +266,11 @@ def extrait_points_mats_hq_era5(an_debut=2008, an_fin=2024):
     print("fin normale")
 
 def main():
-    # extrait_points_asos_du_mrcc()
+    #extrait_points_asos_du_mrcc()
+    extrait_points_asos_du_mrcc(fraction_terre_seuil=0.6)
     # extrait_points_cweeds_du_mrcc()
     #extrait_points_cweeds_era5l()
-    extrait_points_mats_du_mrcc()
+    #extrait_points_mats_du_mrcc()
     # extrait_points_mats_hq_era5()
 
 
